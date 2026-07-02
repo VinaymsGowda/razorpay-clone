@@ -5,7 +5,13 @@ import lombok.*;
 import com.vinayms.razorpayclone.common.entity.BaseAuditableEntity;
 import com.vinayms.razorpayclone.common.entity.Money;
 import com.vinayms.razorpayclone.common.enums.OrderStatus;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -25,8 +31,8 @@ public class Order extends BaseAuditableEntity {
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true)
-    private String idempotencyKey;
+    @Column(name = "receipt", nullable = false, unique = true)   // Order id in merchant system
+    private String receipt;
 
     @Embedded
     private Money amount;
@@ -36,10 +42,12 @@ public class Order extends BaseAuditableEntity {
     private OrderStatus status;
 
     @Column(name = "attempts", nullable = false)
+    @ColumnDefault(value = "0")
     private Integer attempts;
 
     @Column(name = "notes", columnDefinition = "jsonb")
-    private String notes;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String,String> notes;
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;

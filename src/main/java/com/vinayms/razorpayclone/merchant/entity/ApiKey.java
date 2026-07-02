@@ -49,5 +49,8 @@ public class ApiKey extends BaseAuditableEntity {
 
     @Column(name = "graceperiod_expires_at")
     private LocalDateTime gracePeriodExpiresAt;
+
+    @Column(name = "prev_key_secret_hash")
+    private String prevKeySecretHash;
 }
 
