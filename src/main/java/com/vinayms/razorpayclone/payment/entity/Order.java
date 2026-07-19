@@ -15,7 +15,13 @@ import java.util.Map;
 import java.util.UUID;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "orders",
+indexes = {
+        @Index(name = "idx_order_id_merchant_id", columnList = "id, merchant_id"),
+        @Index(name = "idx_order_merchant_id", columnList = "merchant_id"),
+        @Index(name = "idx_order_receipt", columnList = "receipt"),
+}
+)
 @Getter
 @Setter
 @NoArgsConstructor

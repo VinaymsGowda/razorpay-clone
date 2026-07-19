@@ -6,7 +6,11 @@ import com.vinayms.razorpayclone.common.entity.BaseAuditableEntity;
 import java.util.UUID;
 
 @Entity
-@Table(name = "merchant_webhook_config")
+@Table(name = "merchant_webhook_config",
+indexes = {
+        @Index(name = "idx_merchant_webhook_config_merchant_id", columnList = "merchant_id"),
+}
+)
 @Getter
 @Setter
 @NoArgsConstructor

@@ -7,6 +7,7 @@ import com.vinayms.razorpayclone.merchant.dto.response.ApiKeyCreateResponse;
 import com.vinayms.razorpayclone.merchant.dto.response.ApiKeyResponse;
 import com.vinayms.razorpayclone.merchant.entity.ApiKey;
 import com.vinayms.razorpayclone.merchant.entity.Merchant;
+import com.vinayms.razorpayclone.merchant.mapper.ApiKeyMapper;
 import com.vinayms.razorpayclone.merchant.repository.ApiKeyRepository;
 import com.vinayms.razorpayclone.merchant.repository.MerchantRepository;
 import com.vinayms.razorpayclone.merchant.service.ApiKeyService;
@@ -26,6 +27,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
     private final MerchantRepository merchantRepository;
+    private final ApiKeyMapper apiKeyMapper;
 
     @Transactional
     @Override
@@ -60,18 +62,9 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     public List<ApiKeyResponse> getApiKeys(UUID merchantId) {
         Merchant merchant=merchantRepository.findById(merchantId)
                 .orElseThrow(()->new ResourceNotFoundException("Merchant with id not found! "+merchantId));
-        return apiKeyRepository.findByMerchant_Id(merchantId).stream().map(apiKey -> new ApiKeyResponse(
-                apiKey.getId(),
-                apiKey.getKeyId(),
-                apiKey.getEnvironment(),
-                apiKey.getEnabled(),
-                apiKey.getLastUsedAt(),
-                apiKey.getRotatedAt(),
-                apiKey.getGracePeriodExpiresAt(),
-                apiKey.getCreatedAt(),
-                apiKey.getUpdatedAt()
-                )
-        ).toList();
+        var apiKeys=apiKeyRepository.findByMerchant_Id(merchantId);
+
+        return apiKeyMapper.toApiKeyResponseList(apiKeys);
     }
 
     @Override
@@ -115,6 +108,13 @@ public class ApiKeyServiceImpl implements ApiKeyService {
 
 
 
+    }
+
+
+    @Override
+    public List<ApiKeyResponse> listKeysByMerchant(UUID merchantId){
+        List<ApiKey> apiKeys=apiKeyRepository.findByMerchant_Id(merchantId);
+        return apiKeyMapper.toApiKeyResponseList(apiKeys);
     }
 
 

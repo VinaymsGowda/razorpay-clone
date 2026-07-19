@@ -1,5 +1,6 @@
 package com.vinayms.razorpayclone.vault.entity;
 
+import com.vinayms.razorpayclone.common.enums.CardBrand;
 import jakarta.persistence.*;
 import lombok.*;
 import com.vinayms.razorpayclone.common.entity.BaseAuditableEntity;
@@ -33,7 +34,8 @@ public class VaultCard extends BaseAuditableEntity {
     private String lastFourDigits;
 
     @Column(name = "brand",nullable = false)
-    private String brand;
+    @Enumerated(EnumType.STRING)
+    private CardBrand brand;
 
     @Column(name = "bin",nullable = false,length = 6)
     private String bin;  // 1st 6 digits of a card

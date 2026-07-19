@@ -1,5 +1,6 @@
 package com.vinayms.razorpayclone.common.advices;
 
+import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
 import com.vinayms.razorpayclone.common.exceptions.ConflictException;
 import com.vinayms.razorpayclone.common.exceptions.DuplicateResourceException;
 import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
@@ -46,6 +47,14 @@ public class GlobalExceptionHandler {
                         .build())
                 .toList();
         ApiError apiError=ApiError.builder().message(message).subErrors(fieldErrors).build();
+        ApiResponse<?> apiResponse=new ApiResponse<>(apiError);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<?>> handleBadRequestException(BadRequestException e) {
+        String message = e.getLocalizedMessage();
+        ApiError apiError=ApiError.builder().message(message).build();
         ApiResponse<?> apiResponse=new ApiResponse<>(apiError);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
     }

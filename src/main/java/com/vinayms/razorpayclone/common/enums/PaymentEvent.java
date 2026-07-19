@@ -1,6 +1,7 @@
 package com.vinayms.razorpayclone.common.enums;
 
 public enum PaymentEvent {
+    PAYMENT_INITIATED,
     AUTHORIZE_ATTEMPT,
     AUTHORIZE_SUCCESS,
     AUTHORIZE_FAIL,
@@ -9,6 +10,7 @@ public enum PaymentEvent {
     CAPTURE_FAIL,
     REFUND_INIT,
     REFUND_COMPLETE,
+    REFUND_SUCCESS,
     SETTLE,
     CANCEL,
     CAPTURE_TIMEOUT

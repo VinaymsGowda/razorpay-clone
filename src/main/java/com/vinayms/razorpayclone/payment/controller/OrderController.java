@@ -1,6 +1,6 @@
 package com.vinayms.razorpayclone.payment.controller;
 
-import com.vinayms.razorpayclone.payment.dto.order.request.OrderCreateResponse;
+import com.vinayms.razorpayclone.payment.dto.order.request.OrderResponse;
 import com.vinayms.razorpayclone.payment.dto.order.response.OrderCreateRequest;
 import com.vinayms.razorpayclone.payment.service.OrderService;
 import jakarta.validation.Valid;
@@ -26,7 +26,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping(path = "")
-    public ResponseEntity<OrderCreateResponse> createOrder(@RequestBody @Valid OrderCreateRequest orderReq){
+    public ResponseEntity<OrderResponse> createOrder(@RequestBody @Valid OrderCreateRequest orderReq){
         return ResponseEntity.ok(orderService.createOrder(merchantId, orderReq));
     }
 }

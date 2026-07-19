@@ -9,10 +9,16 @@ import com.vinayms.razorpayclone.common.enums.PaymentStatus;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
-@Table(name = "payment")
+@Table(name = "payment",
+indexes = {
+        @Index(name = "idx_payment_order_id", columnList = "order_id"),
+        @Index(name = "idx_payment_merchant_id", columnList = "merchant_id")
+}
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,13 +33,13 @@ public class Payment extends BaseAuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+        private Order order;
 
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true)
-    private String idempotencyKey;
+//    @Column(name = "idempotency_key", nullable = false, unique = true)
+//    private String idempotencyKey;
 
     @Embedded
     private Money amount;
@@ -48,15 +54,15 @@ public class Payment extends BaseAuditableEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "method_details", columnDefinition = "jsonb")
-    private String methodDetails;
-
-    @Column(name = "bank_reference")
-    private String bankReference;
+    private Map<String,Object> methodDetails;
 
     @Column(name = "error_code")
     private String errorCode;
 
     @Column(name = "error_reason")
     private String errorReason;
+
+    @Column(name = "processor_reference",columnDefinition = "text")
+    private String processorReference;
 }
 
