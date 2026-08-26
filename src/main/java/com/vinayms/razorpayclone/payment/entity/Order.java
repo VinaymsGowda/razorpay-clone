@@ -20,6 +20,11 @@ indexes = {
         @Index(name = "idx_order_id_merchant_id", columnList = "id, merchant_id"),
         @Index(name = "idx_order_merchant_id", columnList = "merchant_id"),
         @Index(name = "idx_order_receipt", columnList = "receipt"),
+        @Index(
+                name = "idx_receipt_merchant_id",
+                columnList = "merchant_id,receipt",
+                unique = true
+        )
 }
 )
 @Getter
@@ -27,6 +32,7 @@ indexes = {
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
 public class Order extends BaseAuditableEntity {
 
     @Id
@@ -37,7 +43,7 @@ public class Order extends BaseAuditableEntity {
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
-    @Column(name = "receipt", nullable = false, unique = true)   // Order id in merchant system
+    @Column(name = "receipt", nullable = false)
     private String receipt;
 
     @Embedded

@@ -1,6 +1,8 @@
 package com.vinayms.razorpayclone.merchant.controller;
 
+import com.vinayms.razorpayclone.merchant.dto.request.LoginRequest;
 import com.vinayms.razorpayclone.merchant.dto.request.MerchantSignUpRequest;
+import com.vinayms.razorpayclone.merchant.dto.response.LoginResponse;
 import com.vinayms.razorpayclone.merchant.dto.response.MerchantSignUpResponse;
 import com.vinayms.razorpayclone.merchant.service.AuthService;
 import jakarta.validation.Valid;
@@ -25,5 +27,11 @@ public class AuthController {
     public ResponseEntity<MerchantSignUpResponse> handleSignUp(@RequestBody @Valid MerchantSignUpRequest newMerchant){
         MerchantSignUpResponse signUpResponse = authService.signUp(newMerchant);
         return ResponseEntity.status(HttpStatus.CREATED).body(signUpResponse);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> handleLogin(@RequestBody @Valid LoginRequest newMerchant){
+        LoginResponse loginResponse = authService.login(newMerchant);
+        return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
 }

@@ -4,13 +4,18 @@ import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
 import com.vinayms.razorpayclone.common.exceptions.ConflictException;
 import com.vinayms.razorpayclone.common.exceptions.DuplicateResourceException;
 import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.util.DuplicateFormatFlagsException;
 import java.util.List;
@@ -20,7 +25,7 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
 
-    @ExceptionHandler({ConflictException.class, DataIntegrityViolationException.class, DuplicateResourceException.class})
+    @ExceptionHandler({ConflictException.class, DuplicateResourceException.class})
     public ResponseEntity<ApiResponse<?>> handleConflictResourceException(Exception e) {
         String message = e.getLocalizedMessage();
         ApiError apiError=ApiError.builder().message(message).build();
@@ -51,12 +56,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse<?>> handleBadRequestException(BadRequestException e) {
+    @ExceptionHandler({BadRequestException.class, InvalidFormatException.class, HttpMessageNotReadableException.class})
+    public ResponseEntity<ApiResponse<?>> handleBadRequestException(Exception e) {
         String message = e.getLocalizedMessage();
         ApiError apiError=ApiError.builder().message(message).build();
         ApiResponse<?> apiResponse=new ApiResponse<>(apiError);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<?>> handleBadCredsException(BadCredentialsException e) {
+        String message = "Invalid Credentials";
+        ApiError apiError=ApiError.builder().message(message).build();
+        ApiResponse<?> apiResponse=new ApiResponse<>(apiError);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<ApiResponse<?>> handleJWTException(JwtException e) {
+        String message = e.getLocalizedMessage();
+        ApiError apiError=ApiError.builder().message(message).build();
+        ApiResponse<?> apiResponse=new ApiResponse<>(apiError);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
     }
 
 

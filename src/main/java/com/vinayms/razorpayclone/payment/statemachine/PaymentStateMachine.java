@@ -16,7 +16,7 @@ public class PaymentStateMachine {
     }
     private static final Map<StateTransition,PaymentStatus> TRANSITION=Map.ofEntries(
             Map.entry(new StateTransition(PaymentStatus.CREATED, PaymentEvent.AUTHORIZE_ATTEMPT),PaymentStatus.AUTHORIZING),
-            Map.entry(new StateTransition(PaymentStatus.INITIATED,PaymentEvent.AUTHORIZE_FAIL),PaymentStatus.FAILED),
+            Map.entry(new StateTransition(PaymentStatus.CREATED,PaymentEvent.AUTHORIZE_FAIL),PaymentStatus.FAILED),
             Map.entry(new StateTransition(PaymentStatus.AUTHORIZING, PaymentEvent.AUTHORIZE_SUCCESS),PaymentStatus.AUTHORIZED),
             Map.entry(new StateTransition(PaymentStatus.AUTHORIZING,PaymentEvent.AUTHORIZE_FAIL),PaymentStatus.FAILED),
             Map.entry(new StateTransition(PaymentStatus.AUTHORIZED,PaymentEvent.CAPTURE_REQUEST),PaymentStatus.CAPTURING),
@@ -27,6 +27,7 @@ public class PaymentStateMachine {
             Map.entry(new StateTransition(PaymentStatus.SETTLED,PaymentEvent.REFUND_INIT),PaymentStatus.PARTIAL_REFUND),
             Map.entry(new StateTransition(PaymentStatus.PARTIAL_REFUND,PaymentEvent.REFUND_COMPLETE),PaymentStatus.REFUNDED),
             Map.entry(new StateTransition(PaymentStatus.CAPTURED,PaymentEvent.REFUND_COMPLETE),PaymentStatus.REFUNDED),
+
             Map.entry(new StateTransition(PaymentStatus.CREATED,PaymentEvent.CANCEL),PaymentStatus.CANCELLED),
             Map.entry(new StateTransition(PaymentStatus.AUTHORIZING,PaymentEvent.CANCEL),PaymentStatus.CANCELLED),
             Map.entry(new StateTransition(PaymentStatus.AUTHORIZED,PaymentEvent.CAPTURE_TIMEOUT),PaymentStatus.AUTH_EXPIRED)

@@ -15,6 +15,9 @@ spring:
 vault:
   DEK_ENCRYPTION_KEY: ${DEK_ENCRYPTION_KEY}
 
+jwt:
+  secret-key: ${SECRET_KEY}
+
 payment:
   simulator:
     poll-interval-ms: 5000

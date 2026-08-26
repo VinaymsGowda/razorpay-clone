@@ -14,6 +14,7 @@ import com.vinayms.razorpayclone.merchant.service.ApiKeyService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     private final ApiKeyRepository apiKeyRepository;
     private final MerchantRepository merchantRepository;
     private final ApiKeyMapper apiKeyMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     @Override
@@ -40,11 +42,12 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         String keyId="rzp_"+apiKeyRequest.environment().name().toLowerCase()+"_"+randomString;
 
         String secret=RandomizerUtil.randomBase64(32);
+        String keySecretHash=passwordEncoder.encode(secret);
 
 
         ApiKey apiKey=ApiKey.builder()
                 .keyId(keyId)
-                .keySecretHash(secret)
+                .keySecretHash(keySecretHash)
                 .environment(apiKeyRequest.environment())
                 .merchant(merchant)
                 .enabled(true)
@@ -53,7 +56,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         return new ApiKeyCreateResponse(
                 newApiKey.getId(),
                 newApiKey.getKeyId(),
-                newApiKey.getKeySecretHash(),
+                secret,
                 newApiKey.getEnvironment()
         );
     }
@@ -91,8 +94,8 @@ public class ApiKeyServiceImpl implements ApiKeyService {
 
 
         String oldSecretKeyHash=apiKey.getKeySecretHash();
-        // TODO: Hash it with bcrypt encoder
-        String newSecretKeyHash=RandomizerUtil.randomBase64(32);
+        String newSecretKey=RandomizerUtil.randomBase64(32);
+        String newSecretKeyHash=passwordEncoder.encode(newSecretKey);
 
         apiKey.setPrevKeySecretHash(oldSecretKeyHash);
         apiKey.setKeySecretHash(newSecretKeyHash);
@@ -102,7 +105,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         return new ApiKeyCreateResponse(
                 apiKey.getId(),
                 apiKey.getKeyId(),
-                newSecretKeyHash,
+                newSecretKey,
                 apiKey.getEnvironment()
         );
 

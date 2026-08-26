@@ -5,7 +5,6 @@ import com.vinayms.razorpayclone.common.util.RandomizerUtil;
 import com.vinayms.razorpayclone.payment.processor.PaymentProcessor;
 import com.vinayms.razorpayclone.payment.processor.dto.request.PaymentProcessorRequest;
 import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentProcessorResponse;
-import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

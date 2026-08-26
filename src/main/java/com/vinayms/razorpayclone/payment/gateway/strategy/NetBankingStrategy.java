@@ -7,7 +7,7 @@ import com.vinayms.razorpayclone.payment.processor.PaymentProcessor;
 import com.vinayms.razorpayclone.payment.processor.PaymentProcessorFactory;
 import com.vinayms.razorpayclone.payment.processor.dto.request.PaymentProcessorRequest;
 import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentProcessorResponse;
-import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentResult;
+import com.vinayms.razorpayclone.payment.gateway.dto.PaymentResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,6 @@ public class NetBankingStrategy implements PaymentStrategy {
 
             case PaymentProcessorResponse.Success successResponse ->
                  new PaymentResult.Success(
-                        successResponse.processorRef(),
                         successResponse.bankReference()
                 );
             case PaymentProcessorResponse.Failed failureResponse ->
@@ -65,6 +64,7 @@ public class NetBankingStrategy implements PaymentStrategy {
 
     @Override
     public PaymentResult capture(UUID paymentId) {
-        return null;
+        return new PaymentResult.Success("NBK_SUCCESS_REF");
+
     }
 }

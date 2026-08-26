@@ -3,12 +3,11 @@ package com.vinayms.razorpayclone.payment.gateway.strategy;
 import com.vinayms.razorpayclone.payment.gateway.PaymentStrategy;
 import com.vinayms.razorpayclone.payment.gateway.dto.PaymentRequest;
 import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentProcessorResponse;
-import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentResult;
+import com.vinayms.razorpayclone.payment.gateway.dto.PaymentResult;
 import com.vinayms.razorpayclone.vault.service.VaultService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -35,7 +34,6 @@ public class CardPaymentStrategy implements PaymentStrategy {
             }
             case PaymentProcessorResponse.Success success -> {
                 result = new PaymentResult.Success(
-                        success.processorRef(),
                         success.bankReference()
                 );
             }
@@ -51,6 +49,6 @@ public class CardPaymentStrategy implements PaymentStrategy {
     }
     @Override
     public PaymentResult capture(UUID paymentId) {
-        return null;
+        return new PaymentResult.Success("CARD_SUCCESS_REF");
     }
 }

@@ -38,8 +38,8 @@ public class Payment extends BaseAuditableEntity {
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
-//    @Column(name = "idempotency_key", nullable = false, unique = true)
-//    private String idempotencyKey;
+    @Column(name = "idempotency_key", nullable = false, unique = true)
+    private String idempotencyKey;
 
     @Embedded
     private Money amount;
@@ -64,5 +64,8 @@ public class Payment extends BaseAuditableEntity {
 
     @Column(name = "processor_reference",columnDefinition = "text")
     private String processorReference;
+
+    @Column(length = 100,name = "bank_reference")
+    private String bankReference;
 }
 

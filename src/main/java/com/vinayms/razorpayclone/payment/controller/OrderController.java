@@ -1,5 +1,6 @@
 package com.vinayms.razorpayclone.payment.controller;
 
+import com.vinayms.razorpayclone.merchant.security.MerchantContext;
 import com.vinayms.razorpayclone.payment.dto.order.request.OrderResponse;
 import com.vinayms.razorpayclone.payment.dto.order.response.OrderCreateRequest;
 import com.vinayms.razorpayclone.payment.service.OrderService;
@@ -21,12 +22,13 @@ import java.util.UUID;
 public class OrderController {
 
     //TODO: Add authentication and read merchandId from auth object
-    private final UUID merchantId=UUID.fromString("7d449594-9d7c-4b32-9531-60165a7bcdfa");
 
     private final OrderService orderService;
+    private final MerchantContext merchantContext;
 
     @PostMapping(path = "")
     public ResponseEntity<OrderResponse> createOrder(@RequestBody @Valid OrderCreateRequest orderReq){
+        UUID merchantId = merchantContext.getMerchantId();
         return ResponseEntity.ok(orderService.createOrder(merchantId, orderReq));
     }
 }

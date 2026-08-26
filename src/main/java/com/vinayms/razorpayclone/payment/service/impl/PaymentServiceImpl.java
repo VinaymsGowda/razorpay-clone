@@ -1,20 +1,19 @@
 package com.vinayms.razorpayclone.payment.service.impl;
 
 import com.vinayms.razorpayclone.common.enums.OrderStatus;
-import com.vinayms.razorpayclone.common.enums.PaymentActor;
 import com.vinayms.razorpayclone.common.enums.PaymentEvent;
 import com.vinayms.razorpayclone.common.enums.PaymentStatus;
 import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
+import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
 import com.vinayms.razorpayclone.payment.dto.payment.request.PaymentInitRequest;
 import com.vinayms.razorpayclone.payment.dto.payment.response.PaymentResponse;
 import com.vinayms.razorpayclone.payment.entity.Order;
 import com.vinayms.razorpayclone.payment.entity.Payment;
-import com.vinayms.razorpayclone.payment.entity.PaymentTransitionLog;
 import com.vinayms.razorpayclone.payment.gateway.PaymentStrategy;
 import com.vinayms.razorpayclone.payment.gateway.PaymentStrategyFactory;
 import com.vinayms.razorpayclone.payment.gateway.dto.PaymentRequest;
 import com.vinayms.razorpayclone.payment.mapper.PaymentMapper;
-import com.vinayms.razorpayclone.payment.processor.dto.response.PaymentResult;
+import com.vinayms.razorpayclone.payment.gateway.dto.PaymentResult;
 import com.vinayms.razorpayclone.payment.repository.OrderRepository;
 import com.vinayms.razorpayclone.payment.repository.PaymentRepository;
 import com.vinayms.razorpayclone.payment.repository.PaymentTransitionLogRepository;
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.module.ResolutionException;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -61,7 +59,8 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment=Payment.builder()
                 .paymentMethod(paymentRequest.method())
                 .amount(order.getAmount())
-                .status(PaymentStatus.INITIATED)
+                .status(PaymentStatus.CREATED)
+                .idempotencyKey(UUID.randomUUID().toString())
                 .order(order)
                 .merchantId(order.getMerchantId())
                 .methodDetails(paymentRequest.methodDetails())
@@ -74,6 +73,7 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BadRequestException("Payment Adapter not found for "+paymentRequest.method());
         }
         PaymentRequest request=paymentMapper.toPaymentRequest(payment);
+        transitionService.createTransition(payment,PaymentEvent.AUTHORIZE_ATTEMPT);
         PaymentResult paymentResult=paymentAdapter.initiate(request);
 
         switch (paymentResult){
@@ -86,8 +86,7 @@ public class PaymentServiceImpl implements PaymentService {
                 payment.setErrorCode(failed.errorCode());
             }
             case PaymentResult.Success success -> {
-                payment.setProcessorReference(success.processorRef());
-
+                payment.setBankReference(success.bankReference());
             }
         }
         payment=paymentRepository.save(payment);
@@ -112,16 +111,64 @@ public class PaymentServiceImpl implements PaymentService {
         if(paymentResult instanceof PaymentResult.Success success){
             log.info("Payment captured successfully for paymentId: {} and merchantId: {}",paymentId,merchantId);
             payment.setStatus(PaymentStatus.CAPTURED);
-            payment.setProcessorReference(success.processorRef());
+            payment.setProcessorReference(success.bankReference());
             transitionService.createTransition(payment,PaymentEvent.CAPTURE_SUCCESS);
         }else if(paymentResult instanceof PaymentResult.Failed(String errorCode, String errorDescription)) {
             log.warn("Payment capture failed for paymentId: {} and merchantId: {}",paymentId,merchantId);
             payment.setStatus(PaymentStatus.FAILED);
             payment.setErrorCode(errorCode);
+
             payment.setErrorReason(errorDescription);
             transitionService.createTransition(payment,PaymentEvent.CAPTURE_FAIL);
         }
         payment=paymentRepository.save(payment);
         return paymentMapper.toPaymentResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public void resolveAuthorization(UUID paymentId, boolean approve, String bankRef, String ErrCode, String errorDescription) {
+        Payment payment=paymentRepository.findById(paymentId).orElseThrow(
+                ()->new ResourceNotFoundException("Payment not found for id: "+paymentId)
+        );
+
+        if(payment.getStatus()!=PaymentStatus.AUTHORIZING){
+            log.warn("Payment is not in Authorizing state for {} ,status : {} ", payment.getId(),payment.getStatus());
+        }
+
+        Order order=payment.getOrder();
+
+        if(approve){
+            transitionService.createTransition(payment,PaymentEvent.AUTHORIZE_SUCCESS);
+            payment.setBankReference(bankRef);
+
+            // Auto capture
+
+            transitionService.createTransition(payment,PaymentEvent.CAPTURE_REQUEST);
+
+            PaymentStrategy paymentStrategy=paymentStrategyFactory.getPaymentAdapter(
+                    payment.getPaymentMethod()
+            );
+            PaymentResult captureResult=paymentStrategy.capture(paymentId);
+            if(captureResult instanceof PaymentResult.Success){
+                transitionService.createTransition(payment,PaymentEvent.CAPTURE_SUCCESS);
+                order.setStatus(OrderStatus.PAID);
+            }
+            else if(captureResult instanceof PaymentResult.Failed){
+                transitionService.createTransition(payment,PaymentEvent.CAPTURE_FAIL);
+                payment.setErrorReason(errorDescription);
+                payment.setErrorCode(ErrCode);
+            }
+        }else{
+            transitionService.createTransition(payment,PaymentEvent.AUTHORIZE_FAIL);
+            payment.setErrorReason(errorDescription);
+            payment.setErrorCode(ErrCode);
+        }
+        paymentRepository.save(payment);
+        orderRepository.save(order);
+
+
+        // ToDo: setup a message broker for notifying merchant backend webhooks
+
     }
 }

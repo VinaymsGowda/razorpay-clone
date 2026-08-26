@@ -6,6 +6,8 @@ import jakarta.persistence.MappedSuperclass;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -28,10 +30,12 @@ public abstract class BaseAuditableEntity {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
-    private UUID createdBy;
+    @Column(name = "created_by",updatable = false)
+    @CreatedBy
+    private String createdBy;
 
     @Column(name = "updated_by")
-    private UUID updatedBy;
+    @LastModifiedBy
+    private String updatedBy;
 }
 

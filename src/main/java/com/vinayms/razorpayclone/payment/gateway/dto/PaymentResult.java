@@ -1,4 +1,4 @@
-package com.vinayms.razorpayclone.payment.processor.dto.response;
+package com.vinayms.razorpayclone.payment.gateway.dto;
 
 
 
@@ -9,6 +9,6 @@ public sealed interface PaymentResult permits PaymentResult.Pending, PaymentResu
     record Failed(String errorCode, String errorDescription) implements PaymentResult {
     }
 
-    record Success(String processorRef, String bankReference) implements PaymentResult {
+    record Success(String bankReference) implements PaymentResult {
     }
 }

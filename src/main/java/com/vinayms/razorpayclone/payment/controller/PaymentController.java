@@ -1,5 +1,6 @@
 package com.vinayms.razorpayclone.payment.controller;
 
+import com.vinayms.razorpayclone.merchant.security.MerchantContext;
 import com.vinayms.razorpayclone.payment.dto.payment.request.PaymentInitRequest;
 import com.vinayms.razorpayclone.payment.dto.payment.response.PaymentResponse;
 import com.vinayms.razorpayclone.payment.service.PaymentService;
@@ -19,10 +20,9 @@ import java.util.UUID;
 @RequestMapping("/v1/payments")
 public class PaymentController {
 
-    //TODO: Add authentication and read merchandId from auth object
-    private final UUID merchantId=UUID.fromString("7d449594-9d7c-4b32-9531-60165a7bcdfa");
 
     private final PaymentService paymentService;
+    private final MerchantContext merchantContext;
 
     // This api is called when user fills in payment details and clicks pay now in gateway
     @PostMapping("/initiate")
@@ -30,8 +30,10 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.initiatePayment(paymentRequest));
     }
 
+    // manual capture payment done by merchant on dashboard
     @PostMapping("/{paymentId}/capture")
     public ResponseEntity<PaymentResponse> capturePayment(@PathVariable("paymentId") String paymentId) {
+        UUID merchantId = merchantContext.getMerchantId();
         return ResponseEntity.ok(paymentService.capturePayment(merchantId,paymentId));
     }
 }

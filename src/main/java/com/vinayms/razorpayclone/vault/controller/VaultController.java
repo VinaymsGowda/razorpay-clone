@@ -1,5 +1,6 @@
 package com.vinayms.razorpayclone.vault.controller;
 
+import com.vinayms.razorpayclone.merchant.security.MerchantContext;
 import com.vinayms.razorpayclone.vault.dto.request.TokenizeReq;
 import com.vinayms.razorpayclone.vault.dto.response.TokenizeResp;
 import com.vinayms.razorpayclone.vault.service.VaultService;
@@ -20,12 +21,11 @@ import java.util.UUID;
 public class VaultController {
 
     private final VaultService vaultService;
-    //TODO: Add authentication and read merchantId from auth object
-    private final UUID merchantId=UUID.fromString("7d449594-9d7c-4b32-9531-60165a7bcdfa");
+    private final MerchantContext merchantContext;
 
     @PostMapping("/tokenize")
     public ResponseEntity<TokenizeResp> tokenize(@RequestBody @Valid TokenizeReq req) {
-        TokenizeResp token=vaultService.tokenize(req, merchantId);
+        TokenizeResp token=vaultService.tokenize(req, merchantContext.getMerchantId());
         return ResponseEntity.status(HttpStatus.CREATED).body(token);
     }
 }

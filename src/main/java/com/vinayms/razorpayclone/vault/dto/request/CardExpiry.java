@@ -12,11 +12,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CardExpiry{
-    @NotBlank
     @Min(value = 1, message = "Expiry month must be between 1 and 12")
     @Max(value = 12, message = "Expiry month must be between 1 and 12")
     Integer expiryMonth;
-
-    @NotBlank
+    
     Integer expiryYear;
 }

@@ -24,7 +24,6 @@ public record TokenizeReq(
         String cvv,
 
         @Valid
-        @NotBlank
         @Embedded
         @CardExpiryValidation
         CardExpiry expiry,

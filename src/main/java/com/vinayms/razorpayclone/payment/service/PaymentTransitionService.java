@@ -20,7 +20,7 @@ public class PaymentTransitionService {
     private final PaymentTransitionLogRepository paymentTransitionLogRepository;
 
 
-    public PaymentStatus createTransition(Payment payment, PaymentEvent event){
+    public void createTransition(Payment payment, PaymentEvent event){
         PaymentStatus next=paymentStateMachine.transition(payment.getStatus(),event);
 
         PaymentTransitionLog transitionLog=
@@ -34,7 +34,7 @@ public class PaymentTransitionService {
                         .build();
         paymentTransitionLogRepository.save(transitionLog);
         payment.setStatus(next);
-        return next;
+
 
 
 
