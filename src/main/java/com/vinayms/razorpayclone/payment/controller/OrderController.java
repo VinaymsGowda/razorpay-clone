@@ -21,7 +21,6 @@ import java.util.UUID;
 @Slf4j
 public class OrderController {
 
-    //TODO: Add authentication and read merchandId from auth object
 
     private final OrderService orderService;
     private final MerchantContext merchantContext;

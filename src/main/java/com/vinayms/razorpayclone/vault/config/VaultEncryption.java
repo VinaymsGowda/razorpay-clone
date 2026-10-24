@@ -28,10 +28,7 @@ public class VaultEncryption {
 
     @Bean
     public BytesEncryptor dekEncryptor(){
-        log.info("Dek encryptor with master key {}", masterKey);
         byte[] masterKeyBytes= Base64.getDecoder().decode(masterKey);
-        log.info("Decoded key length: {}", masterKeyBytes.length);
-        log.info("Algorithm: AES");
         SecretKeySpec secretKey = new SecretKeySpec(masterKeyBytes, "AES");
         BytesKeyGenerator salt= KeyGenerators.secureRandom(16);
 

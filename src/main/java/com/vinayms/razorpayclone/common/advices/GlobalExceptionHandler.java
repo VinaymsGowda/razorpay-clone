@@ -4,6 +4,7 @@ import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
 import com.vinayms.razorpayclone.common.exceptions.ConflictException;
 import com.vinayms.razorpayclone.common.exceptions.DuplicateResourceException;
 import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
+import com.vinayms.razorpayclone.common.exceptions.RateLimitExceededException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -62,6 +63,13 @@ public class GlobalExceptionHandler {
         ApiError apiError=ApiError.builder().message(message).build();
         ApiResponse<?> apiResponse=new ApiResponse<>(apiError);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleRateLimitExceededException(RateLimitExceededException e) {
+        ApiError apiError = ApiError.builder().message(e.getLocalizedMessage()).build();
+        ApiResponse<?> apiResponse = new ApiResponse<>(apiError);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(apiResponse);
     }
 
     @ExceptionHandler(BadCredentialsException.class)

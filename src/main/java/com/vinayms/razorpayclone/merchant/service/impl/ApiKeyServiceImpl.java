@@ -1,6 +1,7 @@
 package com.vinayms.razorpayclone.merchant.service.impl;
 
 import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
+import com.vinayms.razorpayclone.common.services.RedisService;
 import com.vinayms.razorpayclone.common.util.RandomizerUtil;
 import com.vinayms.razorpayclone.merchant.dto.request.ApiKeyRequest;
 import com.vinayms.razorpayclone.merchant.dto.response.ApiKeyCreateResponse;
@@ -26,10 +27,13 @@ import java.util.UUID;
 @Slf4j
 public class ApiKeyServiceImpl implements ApiKeyService {
 
+    private static final String API_KEY_CACHE_PREFIX = "apiKey:";
+
     private final ApiKeyRepository apiKeyRepository;
     private final MerchantRepository merchantRepository;
     private final ApiKeyMapper apiKeyMapper;
     private final PasswordEncoder passwordEncoder;
+    private final RedisService redisService;
 
     @Transactional
     @Override
@@ -83,6 +87,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         }
 
         apiKey.setEnabled(false);
+        redisService.delete(cacheKey(apiKey.getKeyId()));
     }
 
     @Transactional
@@ -101,6 +106,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         apiKey.setKeySecretHash(newSecretKeyHash);
         apiKey.setRotatedAt(LocalDateTime.now());
         apiKey.setGracePeriodExpiresAt(LocalDateTime.now().plusHours(24));
+        redisService.delete(cacheKey(apiKey.getKeyId()));
 
         return new ApiKeyCreateResponse(
                 apiKey.getId(),
@@ -111,6 +117,10 @@ public class ApiKeyServiceImpl implements ApiKeyService {
 
 
 
+    }
+
+    private String cacheKey(String keyId) {
+        return API_KEY_CACHE_PREFIX + keyId;
     }
 
 

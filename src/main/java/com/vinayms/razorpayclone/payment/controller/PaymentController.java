@@ -32,7 +32,7 @@ public class PaymentController {
 
     // manual capture payment done by merchant on dashboard
     @PostMapping("/{paymentId}/capture")
-    public ResponseEntity<PaymentResponse> capturePayment(@PathVariable("paymentId") String paymentId) {
+    public ResponseEntity<PaymentResponse> capturePayment(@PathVariable("paymentId") UUID paymentId) {
         UUID merchantId = merchantContext.getMerchantId();
         return ResponseEntity.ok(paymentService.capturePayment(merchantId,paymentId));
     }

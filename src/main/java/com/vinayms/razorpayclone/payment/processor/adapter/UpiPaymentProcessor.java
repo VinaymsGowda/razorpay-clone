@@ -15,7 +15,6 @@ public class UpiPaymentProcessor implements PaymentProcessor {
     private final String VPA_FAIL="fail@hdfc.in";
     @Override
     public PaymentProcessorResponse processPayment(PaymentProcessorRequest paymentRequest) {
-        // TODO: Implement net banking payment processing logic
 
         String vpa=paymentRequest.methodDetails()!=null?
                 paymentRequest.methodDetails().get("vpa").toString():null;

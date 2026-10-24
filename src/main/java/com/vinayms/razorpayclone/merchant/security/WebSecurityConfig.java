@@ -8,12 +8,10 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.net.http.HttpRequest;
 
 @Configuration
 @RequiredArgsConstructor
@@ -25,7 +23,7 @@ public class WebSecurityConfig {
 
 
     private static final String[] JWT_ROUTES={"/v1/auth/**","/v1/merchants/**"};
-    private static final String[] API_KEY_ROUTES={"/v1/order/**","/v1/payments/**"};
+    private static final String[] API_KEY_ROUTES={"/v1/order/**","/v1/payments/**","/v1/vault/**"};
 
     @Bean
     public SecurityFilterChain jwtFilter(HttpSecurity security){

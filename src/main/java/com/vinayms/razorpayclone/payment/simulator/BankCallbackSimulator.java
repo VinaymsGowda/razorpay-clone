@@ -69,7 +69,7 @@ public class BankCallbackSimulator {
     private boolean resolvePaymentStatus(Payment payment, SimulatorConfig.MethodSimulatorConfig methodSimulatorConfig){
         int bucket=Math.abs(payment.getId().hashCode())%100;
 
-        return bucket<methodSimulatorConfig.getSuccessRate();
+        return bucket < methodSimulatorConfig.getSuccessRate();
     }
 
     private void resolvePayment(Payment payment, boolean approve) {

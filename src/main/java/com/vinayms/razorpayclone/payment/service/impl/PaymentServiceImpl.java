@@ -98,7 +98,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PaymentResponse capturePayment(UUID merchantId, String paymentId) {
+    public PaymentResponse capturePayment(UUID merchantId, UUID paymentId) {
         Payment payment=paymentRepository.findByIdAndMerchantId(paymentId,merchantId)
                 .orElseThrow(() ->new ResolutionException("Payment not found for id: "+paymentId));
 

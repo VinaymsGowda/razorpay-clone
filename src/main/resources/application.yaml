@@ -35,3 +35,8 @@ payment:
         min-delay-seconds: 4
         max-delay-seconds: 10
         success-rate: 80
+
+
+api-key:
+  rate-limit:
+    requests-per-minute: 70

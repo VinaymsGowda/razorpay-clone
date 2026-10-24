@@ -2,13 +2,16 @@ package com.vinayms.razorpayclone.merchant.security;
 
 import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
 import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
+import com.vinayms.razorpayclone.common.exceptions.RateLimitExceededException;
+import com.vinayms.razorpayclone.common.cacheEntryDTOs.ApiKeyCache;
+import com.vinayms.razorpayclone.common.ratelimiting.SlidingWindowRateLimiter;
+import com.vinayms.razorpayclone.common.services.RedisService;
 import com.vinayms.razorpayclone.merchant.entity.ApiKey;
 import com.vinayms.razorpayclone.merchant.repository.ApiKeyRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,6 +26,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -33,17 +37,24 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     private static final String BASIC="Basic ";
     private final PasswordEncoder passwordEncoder;
     private final MerchantContext merchantContext;
+    private final RedisService redisService;
+    private final SlidingWindowRateLimiter rateLimiter;
+
 
     private final HandlerExceptionResolver exceptionResolver;
 
     public ApiKeyAuthFilter(ApiKeyRepository apiKeyRepository,
                             PasswordEncoder passwordEncoder,
                             MerchantContext merchantContext,
+                            RedisService redisService,
+                            SlidingWindowRateLimiter rateLimiter,
                             @Qualifier("handlerExceptionResolver")
                             HandlerExceptionResolver exceptionResolver) {
         this.apiKeyRepository = apiKeyRepository;
         this.passwordEncoder = passwordEncoder;
         this.merchantContext = merchantContext;
+        this.redisService = redisService;
+        this.rateLimiter = rateLimiter;
         this.exceptionResolver = exceptionResolver;
     }
 
@@ -71,15 +82,50 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         String keyId=decode[0];
         String keySecret=decode[1];
 
+        String cacheKey="apiKey:"+keyId;
 
-        ApiKey apiKey=apiKeyRepository.findByKeyId(keyId).orElseThrow(
-                ()->new ResourceNotFoundException("Key id not found")
-        );
+        Optional<ApiKeyCache> cachedData=redisService.get(cacheKey,ApiKeyCache.class);
 
+
+        ApiKeyCache apiKey;
+
+        if(cachedData.isEmpty()){
+            ApiKey persistedApiKey = apiKeyRepository.findByKeyId(keyId).orElseThrow(
+                    () -> new ResourceNotFoundException("Key id not found")
+            );
+            apiKey = ApiKeyCache.builder()
+                    .id(persistedApiKey.getId())
+                    .merchantId(persistedApiKey.getMerchant().getId())
+                    .keyId(persistedApiKey.getKeyId())
+                    .keySecretHash(persistedApiKey.getKeySecretHash())
+                    .webhookSecretHash(persistedApiKey.getWebhookSecretHash())
+                    .environment(persistedApiKey.getEnvironment())
+                    .enabled(persistedApiKey.getEnabled())
+                    .lastUsedAt(persistedApiKey.getLastUsedAt())
+                    .rotatedAt(persistedApiKey.getRotatedAt())
+                    .gracePeriodExpiresAt(persistedApiKey.getGracePeriodExpiresAt())
+                    .prevKeySecretHash(persistedApiKey.getPrevKeySecretHash())
+                    .build();
+            redisService.set(cacheKey,apiKey,300);
+        }
+        else{
+            apiKey=cachedData.get();
+        }
         // verify keysecret against db hash
 
-        if(apiKey.getEnabled()==false || !isApiKeyValid(apiKey,keySecret)){
+        if(Boolean.FALSE.equals(apiKey.getEnabled()) || !isApiKeyValid(apiKey,keySecret)){
             throw new BadRequestException("Invalid API Key credentials");
+        }
+
+        SlidingWindowRateLimiter.RateLimitResult rateLimitResult = rateLimiter.checkRequest(keyId);
+        if (!rateLimitResult.allowed()) {
+            response.setHeader("X-Allowed-Request-Per-Minute",
+                    String.valueOf(rateLimitResult.allowedRequestsPerMinute()));
+            response.setHeader("X-Current-Request-Per-Minute",
+                    String.valueOf(rateLimitResult.currentRequestsPerMinute()));
+            throw new RateLimitExceededException(
+                    "You can make up to " + rateLimitResult.allowedRequestsPerMinute()
+                            + " requests per minute. Please try again after some time.");
         }
 
         var auth=new UsernamePasswordAuthenticationToken(
@@ -89,7 +135,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                                 "API_KEY_ROLE")
                 )
         );
-        merchantContext.setMerchantId(apiKey.getMerchant().getId());
+        merchantContext.setMerchantId(apiKey.getMerchantId());
         merchantContext.setKeyId(keyId);
         SecurityContextHolder.getContext().setAuthentication(auth);
         filterChain.doFilter(request,response);
@@ -98,7 +144,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
     }
 
-    public boolean isApiKeyValid(ApiKey apiKey,String keySecret){
+    public boolean isApiKeyValid(ApiKeyCache apiKey,String keySecret){
         if(passwordEncoder.matches(keySecret,apiKey.getKeySecretHash())){
             return true;
         }
