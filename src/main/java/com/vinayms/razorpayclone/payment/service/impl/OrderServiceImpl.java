@@ -1,13 +1,18 @@
 package com.vinayms.razorpayclone.payment.service.impl;
 
+import com.vinayms.razorpayclone.common.enums.EventAggregateType;
 import com.vinayms.razorpayclone.common.enums.OrderStatus;
+import com.vinayms.razorpayclone.common.enums.OutboxEventType;
 import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
 import com.vinayms.razorpayclone.common.exceptions.DuplicateResourceException;
+import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
+import com.vinayms.razorpayclone.common.outbox.OutboxService;
 import com.vinayms.razorpayclone.payment.dto.order.request.OrderResponse;
 import com.vinayms.razorpayclone.payment.dto.order.response.OrderCreateRequest;
 import com.vinayms.razorpayclone.payment.dto.payment.response.PaymentResponse;
 import com.vinayms.razorpayclone.payment.entity.Order;
 import com.vinayms.razorpayclone.payment.entity.Payment;
+import com.vinayms.razorpayclone.payment.event.OrderEventPayload;
 import com.vinayms.razorpayclone.payment.mapper.OrderMapper;
 import com.vinayms.razorpayclone.payment.mapper.PaymentMapper;
 import com.vinayms.razorpayclone.payment.repository.OrderRepository;
@@ -33,6 +38,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentRepository paymentRepository;
     private final PaymentMapper paymentMapper;
     private final OrderMapper orderMapper;
+    private final OutboxService outboxService;
 
     @Transactional
     @Override
@@ -59,6 +65,7 @@ public class OrderServiceImpl implements OrderService {
                 .expiresAt(expiresAt)
                 .build();
         order=orderRepository.save(order);
+        recordOrderEvent(order, OutboxEventType.ORDER_CREATED);
 
         return orderMapper.toOrderResponse(order);
     }
@@ -76,6 +83,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         order=orderRepository.save(order);
+        recordOrderEvent(order, OutboxEventType.ORDER_CANCELED);
 
         return orderMapper.toOrderResponse(order);
     }
@@ -100,5 +108,22 @@ public class OrderServiceImpl implements OrderService {
 
        return paymentMapper.toPaymentResponseList(payments);
 
+    }
+
+    @Override
+    public PaymentResponse getPaymentById(UUID merchantId, UUID paymentId) {
+        Payment payment = paymentRepository.findByIdAndMerchantId(paymentId, merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found for id: " + paymentId));
+
+        return paymentMapper.toPaymentResponse(payment);
+    }
+
+    private void recordOrderEvent(Order order, OutboxEventType eventType) {
+        outboxService.record(
+                EventAggregateType.ORDER,
+                order.getId(),
+                eventType.name(),
+                new OrderEventPayload(order.getId(), order.getMerchantId(), order.getStatus(), order.getAmount())
+        );
     }
 }

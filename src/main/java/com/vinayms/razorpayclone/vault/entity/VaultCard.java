@@ -24,7 +24,8 @@ public class VaultCard extends BaseAuditableEntity {
 
     @Lob
     @Column(name = "encrypted_pan", nullable = false)
-    private byte[] encryptedPan;  // dek encrypts the pan that is card number
+    private byte[] encryptedPan;
+    // dek encrypts the pan that is card number
 
     @Lob
     @Column(name = "encrypted_dek", nullable = false)

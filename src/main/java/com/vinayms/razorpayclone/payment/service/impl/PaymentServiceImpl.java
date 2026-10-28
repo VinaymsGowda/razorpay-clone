@@ -1,14 +1,19 @@
 package com.vinayms.razorpayclone.payment.service.impl;
 
+import com.vinayms.razorpayclone.common.enums.EventAggregateType;
 import com.vinayms.razorpayclone.common.enums.OrderStatus;
+import com.vinayms.razorpayclone.common.enums.OutboxEventType;
 import com.vinayms.razorpayclone.common.enums.PaymentEvent;
 import com.vinayms.razorpayclone.common.enums.PaymentStatus;
 import com.vinayms.razorpayclone.common.exceptions.BadRequestException;
 import com.vinayms.razorpayclone.common.exceptions.ResourceNotFoundException;
+import com.vinayms.razorpayclone.common.outbox.OutboxService;
+import com.vinayms.razorpayclone.merchant.security.MerchantContext;
 import com.vinayms.razorpayclone.payment.dto.payment.request.PaymentInitRequest;
 import com.vinayms.razorpayclone.payment.dto.payment.response.PaymentResponse;
 import com.vinayms.razorpayclone.payment.entity.Order;
 import com.vinayms.razorpayclone.payment.entity.Payment;
+import com.vinayms.razorpayclone.payment.event.PaymentEventPayload;
 import com.vinayms.razorpayclone.payment.gateway.PaymentStrategy;
 import com.vinayms.razorpayclone.payment.gateway.PaymentStrategyFactory;
 import com.vinayms.razorpayclone.payment.gateway.dto.PaymentRequest;
@@ -39,12 +44,14 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentStrategyFactory paymentStrategyFactory;
     private final PaymentMapper paymentMapper;
     private final PaymentTransitionService transitionService;
+    private final MerchantContext merchantContext;
+    private final OutboxService outboxService;
 
     @Override
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public PaymentResponse initiatePayment(PaymentInitRequest paymentRequest) {
 
-        Order order=orderRepository.findById(paymentRequest.orderId())
+        Order order=orderRepository.findByIdAndMerchantIdForUpdate(paymentRequest.orderId(),merchantContext.getMerchantId())
                 .orElseThrow(()->new RuntimeException("Order not found for id: "+paymentRequest.orderId()));
 
 
@@ -74,6 +81,10 @@ public class PaymentServiceImpl implements PaymentService {
         }
         PaymentRequest request=paymentMapper.toPaymentRequest(payment);
         transitionService.createTransition(payment,PaymentEvent.AUTHORIZE_ATTEMPT);
+
+        // This will be n/w call in Real environment adding it inside a Pessimistic locking transaction will cause connection pool error
+
+        // TODO: Add Outbox pattern to do network call outside
         PaymentResult paymentResult=paymentAdapter.initiate(request);
 
         switch (paymentResult){
@@ -91,13 +102,14 @@ public class PaymentServiceImpl implements PaymentService {
         }
         payment=paymentRepository.save(payment);
         orderRepository.save(order);
+        recordPaymentEvent(payment, OutboxEventType.PAYMENT_INITIATED);
 
-
-    return paymentMapper.toPaymentResponse(payment);
+        return paymentMapper.toPaymentResponse(payment);
 
     }
 
     @Override
+    @Transactional
     public PaymentResponse capturePayment(UUID merchantId, UUID paymentId) {
         Payment payment=paymentRepository.findByIdAndMerchantId(paymentId,merchantId)
                 .orElseThrow(() ->new ResolutionException("Payment not found for id: "+paymentId));
@@ -108,11 +120,13 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentStrategy paymentAdapter= paymentStrategyFactory.getPaymentAdapter(payment.getPaymentMethod());
 
         PaymentResult paymentResult=paymentAdapter.capture(payment.getId());
+        OutboxEventType eventType = null;
         if(paymentResult instanceof PaymentResult.Success success){
             log.info("Payment captured successfully for paymentId: {} and merchantId: {}",paymentId,merchantId);
             payment.setStatus(PaymentStatus.CAPTURED);
             payment.setProcessorReference(success.bankReference());
             transitionService.createTransition(payment,PaymentEvent.CAPTURE_SUCCESS);
+            eventType = OutboxEventType.PAYMENT_CAPTURED;
         }else if(paymentResult instanceof PaymentResult.Failed(String errorCode, String errorDescription)) {
             log.warn("Payment capture failed for paymentId: {} and merchantId: {}",paymentId,merchantId);
             payment.setStatus(PaymentStatus.FAILED);
@@ -120,8 +134,12 @@ public class PaymentServiceImpl implements PaymentService {
 
             payment.setErrorReason(errorDescription);
             transitionService.createTransition(payment,PaymentEvent.CAPTURE_FAIL);
+            eventType = OutboxEventType.PAYMENT_FAILED;
         }
         payment=paymentRepository.save(payment);
+        if (eventType != null) {
+            recordPaymentEvent(payment, eventType);
+        }
         return paymentMapper.toPaymentResponse(payment);
     }
 
@@ -137,6 +155,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         Order order=payment.getOrder();
+        OutboxEventType eventType = null;
 
         if(approve){
             transitionService.createTransition(payment,PaymentEvent.AUTHORIZE_SUCCESS);
@@ -153,22 +172,42 @@ public class PaymentServiceImpl implements PaymentService {
             if(captureResult instanceof PaymentResult.Success){
                 transitionService.createTransition(payment,PaymentEvent.CAPTURE_SUCCESS);
                 order.setStatus(OrderStatus.PAID);
+                eventType = OutboxEventType.PAYMENT_CAPTURED;
             }
             else if(captureResult instanceof PaymentResult.Failed){
                 transitionService.createTransition(payment,PaymentEvent.CAPTURE_FAIL);
                 payment.setErrorReason(errorDescription);
                 payment.setErrorCode(ErrCode);
+                eventType = OutboxEventType.PAYMENT_FAILED;
             }
         }else{
             transitionService.createTransition(payment,PaymentEvent.AUTHORIZE_FAIL);
             payment.setErrorReason(errorDescription);
             payment.setErrorCode(ErrCode);
+            eventType = OutboxEventType.PAYMENT_FAILED;
         }
         paymentRepository.save(payment);
         orderRepository.save(order);
-
+        if (eventType != null) {
+            recordPaymentEvent(payment, eventType);
+        }
 
         // ToDo: setup a message broker for notifying merchant backend webhooks
 
+    }
+
+    private void recordPaymentEvent(Payment payment, OutboxEventType eventType) {
+        outboxService.record(
+                EventAggregateType.PAYMENT,
+                payment.getId(),
+                eventType.name(),
+                new PaymentEventPayload(
+                        payment.getId(),
+                        payment.getOrder().getId(),
+                        payment.getMerchantId(),
+                        payment.getAmount(),
+                        payment.getPaymentMethod()
+                )
+        );
     }
 }

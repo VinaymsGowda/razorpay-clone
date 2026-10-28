@@ -17,6 +17,8 @@ public interface OrderService {
 
     List<PaymentResponse> getPayments(UUID merchantId, UUID orderId);
 
+    PaymentResponse getPaymentById(UUID merchantId, UUID paymentId);
+
 
 
 }

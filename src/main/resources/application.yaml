@@ -5,6 +5,22 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  task:
+    scheduling:
+      pool:
+        size: 4
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        request.timeout.ms: 5000
+        delivery.timeout.ms: 10000
+        max.block.ms: 5000
   jpa:
     hibernate:
       ddl-auto: update
@@ -40,3 +56,21 @@ payment:
 api-key:
   rate-limit:
     requests-per-minute: 70
+
+outbox:
+  poller:
+    delay-ms: 2000
+    batch-size: 50
+    send-timeout-ms: 10000
+  cleanup:
+    retention-days: 20
+    cron: "0 0 3 * * *"
+
+kafka:
+  partitions: 3
+  replicas: 1
+  topics:
+    payment: payments.events
+    order: orders.events
+    refund: refund.events
+    settlement: settlement.events
