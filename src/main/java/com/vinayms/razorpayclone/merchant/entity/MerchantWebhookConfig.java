@@ -27,16 +27,16 @@ public class MerchantWebhookConfig extends BaseAuditableEntity {
     @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;
 
-    @Column(name = "webhook_url", nullable = false)
+    @Column(name = "webhook_url", nullable = false, length = 2048)
     private String webhookUrl;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @Column(name = "event_type", nullable = false)
+    @Column(name = "event_type", nullable = false, length = 500)
     private String eventType;
 
-    @Column(name = "webhook_secret")
+    @Column(name = "webhook_secret", length = 1024)
     private String webhookSecret;
 
 }

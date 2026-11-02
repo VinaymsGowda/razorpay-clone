@@ -5,6 +5,7 @@ package com.vinayms.razorpayclone.common.enums;
 // FAILED -> DEAD
 public enum WebhookEventStatus {
     PENDING,
+    PROCESSING,
     DELIVERED,
     FAILED,
     DEAD

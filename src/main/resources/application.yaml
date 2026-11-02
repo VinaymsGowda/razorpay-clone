@@ -11,6 +11,12 @@ spring:
         size: 4
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: webhook-delivery
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
       acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -30,6 +36,11 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 vault:
   DEK_ENCRYPTION_KEY: ${DEK_ENCRYPTION_KEY}
+
+webhook:
+  secret-encryption-key: ${WEBHOOK_SECRET_ENCRYPTION_KEY}
+  delivery:
+    poll-interval-ms: 1000
 
 jwt:
   secret-key: ${SECRET_KEY}
@@ -51,7 +62,6 @@ payment:
         min-delay-seconds: 4
         max-delay-seconds: 10
         success-rate: 80
-
 
 api-key:
   rate-limit:

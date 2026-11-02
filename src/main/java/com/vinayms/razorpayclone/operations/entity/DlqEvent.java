@@ -7,9 +7,15 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "dlq_event")
+@Getter
+@Setter
+@NoArgsConstructor
 public class DlqEvent {
 
     @Id
