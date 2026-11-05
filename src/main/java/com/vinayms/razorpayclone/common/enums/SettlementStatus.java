@@ -1,7 +1,8 @@
 package com.vinayms.razorpayclone.common.enums;
 
 public enum SettlementStatus {
-    INITIATED,
+    PENDING,
     PROCESSED,
+    FAILED,
     REVOKED
 }

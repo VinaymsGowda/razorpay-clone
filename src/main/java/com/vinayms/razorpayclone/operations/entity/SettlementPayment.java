@@ -8,7 +8,13 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name="settlement_payment")
+@Table(
+        name = "settlement_payment",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_settlement_payment_payment_id",
+                columnNames = "payment_id"
+        )
+)
 public class SettlementPayment extends BaseAuditableEntity {
 
     @EmbeddedId

@@ -9,6 +9,7 @@ import com.vinayms.razorpayclone.common.enums.PaymentStatus;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -16,7 +17,8 @@ import java.util.UUID;
 @Table(name = "payment",
 indexes = {
         @Index(name = "idx_payment_order_id", columnList = "order_id"),
-        @Index(name = "idx_payment_merchant_id", columnList = "merchant_id")
+        @Index(name = "idx_payment_merchant_id", columnList = "merchant_id"),
+        @Index(name = "idx_payment_status_captured_at", columnList = "status, captured_at")
 }
 )
 @Getter
@@ -47,6 +49,9 @@ public class Payment extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private PaymentStatus status;
+
+    @Column(name = "captured_at")
+    private LocalDateTime capturedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")

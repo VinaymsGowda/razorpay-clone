@@ -15,7 +15,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "settlement")
+@Table(name = "settlement", indexes = {
+        @Index(name = "uk_settlement_bank_reference", columnList = "bank_reference", unique = true)
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -66,14 +68,33 @@ public class Settlement extends BaseAuditableEntity {
     })
     private Money netAmount;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private SettlementStatus status;
 
     @Column(name = "bank_reference")
     private String bankReference;
 
+    @Column(name = "merchant_bank_account")
+    private String merchantBankAccount;
+
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
+
+    @Column(name = "failure_code")
+    private String failureCode;
+
+    @Column(name = "failure_reason")
+    private String failureReason;
+
+    @Column(name = "failed_at")
+    private LocalDateTime failedAt;
 }
 
 

@@ -123,13 +123,11 @@ public class PaymentServiceImpl implements PaymentService {
         OutboxEventType eventType = null;
         if(paymentResult instanceof PaymentResult.Success success){
             log.info("Payment captured successfully for paymentId: {} and merchantId: {}",paymentId,merchantId);
-            payment.setStatus(PaymentStatus.CAPTURED);
             payment.setProcessorReference(success.bankReference());
             transitionService.createTransition(payment,PaymentEvent.CAPTURE_SUCCESS);
             eventType = OutboxEventType.PAYMENT_CAPTURED;
         }else if(paymentResult instanceof PaymentResult.Failed(String errorCode, String errorDescription)) {
             log.warn("Payment capture failed for paymentId: {} and merchantId: {}",paymentId,merchantId);
-            payment.setStatus(PaymentStatus.FAILED);
             payment.setErrorCode(errorCode);
 
             payment.setErrorReason(errorDescription);

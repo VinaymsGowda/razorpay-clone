@@ -84,3 +84,19 @@ kafka:
     order: orders.events
     refund: refund.events
     settlement: settlement.events
+
+settlement:
+  hold-days: 2
+  fee-percent: 2.0
+  gst-percent: 2.5
+  zone: Asia/Kolkata
+  create-cron: "0 0 1 * * *"
+  max-retries: 3
+  backoff-seconds:
+    - 300
+    - 1800
+    - 7200
+  simulator:
+    poll-interval-ms: 5000
+    success-rate: 80
+    chaos-mode: NORMAL
